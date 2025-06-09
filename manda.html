@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Pustaka & Sitasi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="https://raw.githubusercontent.com/mandaputri/citasicepat/main/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        body.dark {
+            background: linear-gradient(135deg, #232946 0%, #1a1a2e 100%);
+            color: #f4f4f4;
+        }
+        .dark .bg-white { background-color: #232946 !important; }
+        .dark .text-gray-700 { color: #e0e0e0 !important; }
+        .dark .text-gray-600 { color: #bdbdbd !important; }
+        .dark .text-gray-500 { color: #bdbdbd !important; }
+        .dark .border-gray-200 { border-color: #44475a !important; }
+        .dark .border-gray-300 { border-color: #44475a !important; }
+        .dark .bg-gray-50 { background-color: #232946 !important; }
+        .dark .shadow-2xl { box-shadow: 0 8px 32px 0 rgba(0,0,0,0.7) !important; }
+        .dark .focus\:ring-indigo-500 { box-shadow: 0 0 0 2px #6366f1 !important; }
+        .dark .bg-gray-200 { background-color: #44475a !important; }
+        .dark .hover\:bg-gray-300:hover { background-color: #393e46 !important; }
+        .dark .bg-gray-700 { background-color: #232946 !important; }
+        .dark .hover\:bg-gray-600:hover { background-color: #393e46 !important; }
+        .dark .text-indigo-700 { color: #a5b4fc !important; }
+        .dark .text-indigo-600 { color: #818cf8 !important; }
+        .dark .text-indigo-800 { color: #6366f1 !important; }
+        .dark .focus\:ring-indigo-500 { box-shadow: 0 0 0 2px #6366f1 !important; }
+        .dark .border { border-color: #44475a !important; }
+        .dark .bg-gradient-to-br { background: linear-gradient(135deg, #232946 0%, #1a1a2e 100%) !important; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-sky-100 to-indigo-200 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="bg-white shadow-2xl rounded-xl p-6 md:p-10 w-full max-w-2xl">
+        <header class="text-center mb-8 relative">
+            
+            <h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-600">
+                Daftar Pustaka & Sitasi 
+            </h1>
+            <p class="text-gray-600 mt-2">Generator Daftar Pustaka & Sitasi Instan dari DOI</p>
+            <button id="toggleDark" title="Ganti Mode" class="absolute top-0 right-0 bg-gray-200 dark:bg-gray-700 rounded-full p-2 shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                <span id="darkIcon">🌙</span>
+                <span id="lightIcon" class="hidden">☀️</span>
+            </button>
+        </header>
+
+        <main>
+            <!-- Input DOI -->
+            <div class="mb-6">
+                <label for="doiInput" class="block text-sm font-medium text-gray-700 mb-1">Masukkan DOI Artikel:</label>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="doiInput" name="doiInput" placeholder="Contoh: 10.1038/s41586-021-03590-x"
+                           class="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+                    <button id="prosesDoiButton"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-150 ease-in-out w-full sm:w-auto">
+                        Proses DOI
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pilihan Gaya Sitasi (Contoh Sederhana) -->
+            <div class="mb-6">
+                <label for="citationStyle" class="block text-sm font-medium text-gray-700 mb-1">Gaya Sitasi:</label>
+                <select id="citationStyle" name="citationStyle"
+                        class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+                    <option value="apa" selected>APA (American Psychological Association)</option>
+                    <option value="mla">MLA (Modern Language Association)</option>
+                    <option value="vancouver">Vancouver (ICMJE)</option>
+                    <option value="harvard">Harvard</option>
+                    <option value="ieee">IEEE</option>
+                </select>
+            </div>
+
+            <!-- Loader dan Pesan Status -->
+            <div id="statusArea" class="text-center my-4">
+                <div id="loader" class="loader hidden"></div>
+                <p id="statusMessage" class="text-gray-600"></p>
+            </div>
+
+            <!-- Hasil Daftar Pustaka -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-1">
+                    <label for="bibliographyResult" class="block text-sm font-medium text-gray-700">Daftar Pustaka:</label>
+                    <button id="copyBibliography" title="Salin Daftar Pustaka"
+                            class="text-indigo-600 hover:text-indigo-800 transition duration-150 text-sm font-medium flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Salin
+                    </button>
+                </div>
+                <textarea id="bibliographyResult" rows="5" readonly
+                          class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"></textarea>
+            </div>
+
+            <!-- Hasil Sitasi Dalam Teks -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label for="inTextCitationResult" class="block text-sm font-medium text-gray-700">Sitasi Dalam Teks (Contoh):</label>
+                     <button id="copyInText" title="Salin Sitasi Dalam Teks"
+                            class="text-indigo-600 hover:text-indigo-800 transition duration-150 text-sm font-medium flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Salin
+                    </button>
+                </div>
+                <textarea id="inTextCitationResult" rows="2" readonly
+                          class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"></textarea>
+            </div>
+
+            <!-- Motivasi -->
+            <div class="mt-3 text-center text-indigo-700 dark:text-indigo-300 font-semibold text-sm" id="motivasi">
+                <!-- Akan diisi JS -->
+            </div>
+        </main>
+
+        <footer class="text-center mt-10 pt-6 border-t border-gray-200">
+            <p class="text-sm text-gray-500">&copy; <span id="currentYear"></span> Made with love for manda, okta dan AI</p>
+        </footer>
+    </div>
+
+    <script>
+        // Set tahun berjalan untuk footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Ambil elemen DOM
+        const doiInput = document.getElementById('doiInput');
+        const prosesDoiButton = document.getElementById('prosesDoiButton');
+        const citationStyleSelect = document.getElementById('citationStyle');
+        const bibliographyResult = document.getElementById('bibliographyResult');
+        const inTextCitationResult = document.getElementById('inTextCitationResult');
+        const loader = document.getElementById('loader');
+        const statusMessage = document.getElementById('statusMessage');
+        const copyBibliographyButton = document.getElementById('copyBibliography');
+        const copyInTextButton = document.getElementById('copyInText');
+        const toggleDark = document.getElementById('toggleDark');
+        const darkIcon = document.getElementById('darkIcon');
+        const lightIcon = document.getElementById('lightIcon');
+
+        // Event listener untuk tombol proses DOI
+        prosesDoiButton.addEventListener('click', async () => {
+            const doi = doiInput.value.trim();
+            const style = citationStyleSelect.value;
+
+            if (!doi) {
+                displayStatus("Harap masukkan DOI.", "error");
+                return;
+            }
+
+            displayStatus("Memproses...", "loading");
+            bibliographyResult.value = ''; // Kosongkan hasil sebelumnya
+            inTextCitationResult.value = ''; // Kosongkan hasil sebelumnya
+
+            try {
+                // Menggunakan proxy untuk menghindari masalah CORS jika API tidak mendukungnya secara langsung
+                // atau jika API memerlukan header khusus yang tidak bisa di-set dari browser.
+                // Untuk CrossRef, biasanya bisa langsung, tetapi ini contoh jika diperlukan.
+                // const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://api.crossref.org/works/' + doi)}`;
+                // Untuk CrossRef API, kita bisa coba langsung
+                const apiUrl = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
+                
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error(`DOI tidak ditemukan (status: ${response.status}). Pastikan DOI benar.`);
+                    }
+                    throw new Error(`Gagal mengambil data (status: ${response.status}).`);
+                }
+
+                const data = await response.json();
+                
+                // // Jika menggunakan proxy allorigins
+                // if (data.status && data.status.http_code !== 200) {
+                //      throw new Error(`Gagal mengambil data dari CrossRef (status proxy: ${data.status.http_code}).`);
+                // }
+                // const jsonData = JSON.parse(data.contents); // Jika menggunakan allorigins
+                // const item = jsonData.message;
+
+                const item = data.message; // Jika langsung ke CrossRef
+
+                if (!item) {
+                    throw new Error("Format respons tidak sesuai atau item tidak ditemukan.");
+                }
+                
+                formatAndDisplay(item, style);
+                displayStatus("Berhasil mengambil dan memformat data!", "success");
+
+            } catch (error) {
+                console.error("Error:", error);
+                displayStatus(`Terjadi kesalahan: ${error.message}`, "error");
+                bibliographyResult.value = '';
+                inTextCitationResult.value = '';
+            }
+        });
+
+        // Fungsi untuk menampilkan status (loading, error, success)
+        function displayStatus(message, type) {
+            statusMessage.textContent = message;
+            if (type === "loading") {
+                loader.classList.remove('hidden');
+                statusMessage.className = 'text-blue-600';
+            } else if (type === "error") {
+                loader.classList.add('hidden');
+                statusMessage.className = 'text-red-600 font-semibold';
+            } else if (type === "success") {
+                loader.classList.add('hidden');
+                statusMessage.className = 'text-green-600 font-semibold';
+            } else {
+                loader.classList.add('hidden');
+                statusMessage.className = 'text-gray-600';
+            }
+        }
+
+        // Fungsi untuk memformat dan menampilkan hasil
+        function formatAndDisplay(item, style) {
+            if (style === 'apa') {
+                // Pemformatan APA (Sederhana)
+                let authors = '';
+                if (item.author && item.author.length > 0) {
+                    authors = item.author.map(auth => {
+                        let name = '';
+                        if (auth.family) name += auth.family;
+                        if (auth.given) name += `, ${auth.given.substring(0,1)}.`;
+                        return name;
+                    }).join(', & ');
+                     // Ganti koma terakhir sebelum '&' jika lebih dari 2 penulis
+                    if (item.author.length > 2) {
+                        const lastCommaIndex = authors.lastIndexOf(',');
+                        authors = authors.substring(0, lastCommaIndex) + authors.substring(lastCommaIndex).replace(',', '');
+                    } else if (item.author.length === 2) {
+                         authors = authors.replace(',', ''); // Hapus koma jika hanya 2 penulis
+                    }
+                } else {
+                    authors = 'Penulis tidak diketahui';
+                }
+
+                const year = item.issued && item.issued['date-parts'] ? item.issued['date-parts'][0][0] : 'Tahun tidak diketahui';
+                const title = item.title && item.title.length > 0 ? item.title[0] : 'Judul tidak diketahui';
+                const journal = item['container-title'] && item['container-title'].length > 0 ? item['container-title'][0] : 'Jurnal tidak diketahui';
+                
+                let volume = item.volume || '';
+                let issue = item.issue || '';
+                let page = item.page || '';
+
+                let bibliography = `${authors}. (${year}). ${title}. *${journal}*`;
+                if (volume) bibliography += `, *${volume}*`;
+                if (issue) bibliography += `(${issue})`;
+                if (page) bibliography += `, ${page}`;
+                bibliography += '.';
+                if (item.DOI) bibliography += ` https://doi.org/${item.DOI}`;
+
+                bibliographyResult.value = bibliography;
+
+                // Sitasi dalam teks APA (Sederhana)
+                let inTextAuthors = '';
+                if (item.author && item.author.length > 0) {
+                    if (item.author.length === 1) {
+                        inTextAuthors = item.author[0].family || 'Penulis';
+                    } else if (item.author.length === 2) {
+                        inTextAuthors = `${item.author[0].family || 'Penulis1'} & ${item.author[1].family || 'Penulis2'}`;
+                    } else { // 3 atau lebih penulis
+                        inTextAuthors = `${item.author[0].family || 'Penulis'} et al.`;
+                    }
+                } else {
+                    inTextAuthors = 'Penulis tidak diketahui';
+                }
+                inTextCitationResult.value = `(${inTextAuthors}, ${year})`;
+
+            } else if (style === 'mla') {
+                // MLA: Last, First. "Title." Journal, vol, no, year, pages. DOI.
+                let authors = '';
+                if (item.author && item.author.length > 0) {
+                    authors = item.author.map(auth => {
+                        let name = '';
+                        if (auth.family) name += auth.family;
+                        if (auth.given) name += `, ${auth.given}`;
+                        return name;
+                    }).join(', ');
+                } else {
+                    authors = 'Author unknown';
+                }
+                const year = item.issued && item.issued['date-parts'] ? item.issued['date-parts'][0][0] : '';
+                const title = item.title && item.title.length > 0 ? item.title[0] : '';
+                const journal = item['container-title'] && item['container-title'].length > 0 ? item['container-title'][0] : '';
+                let volume = item.volume || '';
+                let issue = item.issue || '';
+                let page = item.page || '';
+                let bibliography = `${authors}. "${title}." ${journal}`;
+                if (volume) bibliography += `, vol. ${volume}`;
+                if (issue) bibliography += `, no. ${issue}`;
+                if (year) bibliography += `, ${year}`;
+                if (page) bibliography += `, pp. ${page}`;
+                bibliography += '.';
+                if (item.DOI) bibliography += ` https://doi.org/${item.DOI}`;
+                bibliographyResult.value = bibliography;
+
+                // MLA in-text: (Last page)
+                let inTextAuthors = '';
+                if (item.author && item.author.length > 0) {
+                    inTextAuthors = item.author[0].family || 'Author';
+                } else {
+                    inTextAuthors = 'Author';
+                }
+                inTextCitationResult.value = `(${inTextAuthors} ${page ? page.split('-')[0] : ''})`;
+
+            } else if (style === 'vancouver') {
+                // Vancouver: Last F, Last F, Title. Journal. Year;Volume(Issue):Pages. DOI
+                let authors = '';
+                if (item.author && item.author.length > 0) {
+                    authors = item.author.map(auth => {
+                        let name = '';
+                        if (auth.family) name += auth.family;
+                        if (auth.given) name += ` ${auth.given[0]}.`;
+                        return name;
+                    }).join(', ');
+                } else {
+                    authors = 'Author unknown';
+                }
+                const year = item.issued && item.issued['date-parts'] ? item.issued['date-parts'][0][0] : '';
+                const title = item.title && item.title.length > 0 ? item.title[0] : '';
+                const journal = item['container-title'] && item['container-title'].length > 0 ? item['container-title'][0] : '';
+                let volume = item.volume || '';
+                let issue = item.issue || '';
+                let page = item.page || '';
+                let bibliography = `${authors}. ${title}. ${journal}. ${year}`;
+                if (volume) bibliography += `;${volume}`;
+                if (issue) bibliography += `(${issue})`;
+                if (page) bibliography += `:${page}`;
+                bibliography += '.';
+                if (item.DOI) bibliography += ` https://doi.org/${item.DOI}`;
+                bibliographyResult.value = bibliography;
+
+                // Vancouver in-text: [n] atau (Last et al.)
+                let inTextAuthors = '';
+                if (item.author && item.author.length > 0) {
+                    if (item.author.length === 1) {
+                        inTextAuthors = item.author[0].family || 'Author';
+                    } else {
+                        inTextAuthors = `${item.author[0].family} et al.`;
+                    }
+                } else {
+                    inTextAuthors = 'Author';
+                }
+                inTextCitationResult.value = `(${inTextAuthors})`;
+
+            } else if (style === 'harvard') {
+                // Harvard: Last, F. (Year) 'Title', Journal, vol Volume, no Issue, pp. Pages. doi:DOI
+                let authors = '';
+                if (item.author && item.author.length > 0) {
+                    authors = item.author.map(auth => {
+                        let name = '';
+                        if (auth.family) name += auth.family;
+                        if (auth.given) name += `, ${auth.given[0]}.`;
+                        return name;
+                    }).join('; ');
+                } else {
+                    authors = 'Author unknown';
+                }
+                const year = item.issued && item.issued['date-parts'] ? item.issued['date-parts'][0][0] : '';
+                const title = item.title && item.title.length > 0 ? item.title[0] : '';
+                const journal = item['container-title'] && item['container-title'].length > 0 ? item['container-title'][0] : '';
+                let volume = item.volume || '';
+                let issue = item.issue || '';
+                let page = item.page || '';
+                let bibliography = `${authors} (${year}) '${title}', ${journal}`;
+                if (volume) bibliography += `, vol. ${volume}`;
+                if (issue) bibliography += `, no. ${issue}`;
+                if (page) bibliography += `, pp. ${page}`;
+                if (item.DOI) bibliography += `. doi:${item.DOI}`;
+                bibliographyResult.value = bibliography;
+
+                // Harvard in-text: (Last Year)
+                let inTextAuthors = '';
+                if (item.author && item.author.length > 0) {
+                    inTextAuthors = item.author[0].family || 'Author';
+                } else {
+                    inTextAuthors = 'Author';
+                }
+                inTextCitationResult.value = `(${inTextAuthors} ${year})`;
+
+            } else if (style === 'ieee') {
+                // IEEE: [n] F. Last, "Title," Journal, vol. Volume, no. Issue, pp. Pages, Year. doi:DOI
+                let authors = '';
+                if (item.author && item.author.length > 0) {
+                    authors = item.author.map(auth => {
+                        let name = '';
+                        if (auth.given) name += `${auth.given[0]}. `;
+                        if (auth.family) name += auth.family;
+                        return name;
+                    }).join(', ');
+                } else {
+                    authors = 'Author unknown';
+                }
+                const year = item.issued && item.issued['date-parts'] ? item.issued['date-parts'][0][0] : '';
+                const title = item.title && item.title.length > 0 ? item.title[0] : '';
+                const journal = item['container-title'] && item['container-title'].length > 0 ? item['container-title'][0] : '';
+                let volume = item.volume || '';
+                let issue = item.issue || '';
+                let page = item.page || '';
+                let bibliography = `${authors}, "${title}," ${journal}`;
+                if (volume) bibliography += `, vol. ${volume}`;
+                if (issue) bibliography += `, no. ${issue}`;
+                if (page) bibliography += `, pp. ${page}`;
+                if (year) bibliography += `, ${year}`;
+                if (item.DOI) bibliography += `. doi: ${item.DOI}`;
+                bibliographyResult.value = bibliography;
+
+                // IEEE in-text: [n]
+                inTextCitationResult.value = `[1]`;
+            } else {
+                bibliographyResult.value = "Gaya sitasi ini belum didukung dalam contoh ini.";
+                inTextCitationResult.value = "";
+            }
+        }
+
+        // Fungsi untuk menyalin teks ke clipboard
+        function copyToClipboard(textToCopy, buttonElement, originalText) {
+            // Coba menggunakan API Clipboard modern jika tersedia dan diizinkan
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => {
+                        buttonElement.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg> Tersalin!`;
+                        setTimeout(() => { buttonElement.innerHTML = originalText; }, 2000);
+                    })
+                    .catch(err => {
+                        console.warn('Gagal menyalin dengan API Clipboard: ', err);
+                        fallbackCopyToClipboard(textToCopy, buttonElement, originalText);
+                    });
+            } else {
+                // Fallback untuk browser lama atau konteks tidak aman
+                fallbackCopyToClipboard(textToCopy, buttonElement, originalText);
+            }
+        }
+        
+        function fallbackCopyToClipboard(textToCopy, buttonElement, originalText) {
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            textArea.style.position = "fixed"; // Mencegah scrolling ke bawah
+            textArea.style.left = "-9999px"; // Pindahkan keluar layar
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    buttonElement.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg> Tersalin!`;
+                } else {
+                     buttonElement.textContent = 'Gagal Salin';
+                }
+            } catch (err) {
+                console.error('Gagal menyalin teks: ', err);
+                buttonElement.textContent = 'Gagal Salin';
+            }
+            document.body.removeChild(textArea);
+            setTimeout(() => { buttonElement.innerHTML = originalText; }, 2000);
+        }
+
+
+        // Event listener untuk tombol salin
+        copyBibliographyButton.addEventListener('click', () => {
+            if (bibliographyResult.value) {
+                 const originalButtonText = copyBibliographyButton.innerHTML;
+                copyToClipboard(bibliographyResult.value, copyBibliographyButton, originalButtonText);
+            }
+        });
+
+        copyInTextButton.addEventListener('click', () => {
+            if (inTextCitationResult.value) {
+                const originalButtonText = copyInTextButton.innerHTML;
+                copyToClipboard(inTextCitationResult.value, copyInTextButton, originalButtonText);
+            }
+        });
+
+        // Tambahkan auto-paste DOI dari clipboard jika ada
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (navigator.clipboard && window.isSecureContext) {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (/10\.\d{4,9}\/[-._;()/:A-Z0-9]+/i.test(text)) {
+                        if (confirm("Terdeteksi DOI di clipboard. Paste otomatis?")) {
+                            doiInput.value = text;
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+            }
+        });
+
+        // Dark mode toggle
+        function setDarkMode(on) {
+            if (on) {
+                document.body.classList.add('dark');
+                darkIcon.classList.add('hidden');
+                lightIcon.classList.remove('hidden');
+                localStorage.setItem('darkMode', '1');
+            } else {
+                document.body.classList.remove('dark');
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+                localStorage.setItem('darkMode', '0');
+            }
+        }
+        toggleDark.addEventListener('click', () => {
+            setDarkMode(!document.body.classList.contains('dark'));
+        });
+        // Set dark mode sesuai preferensi
+        (function() {
+            const userPref = localStorage.getItem('darkMode');
+            if (userPref === '1' || (userPref === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                setDarkMode(true);
+            } else {
+                setDarkMode(false);
+            }
+        })();
+
+        // Motivasi random
+        const motivasiList = [
+            "Semangat ngerjain laporan, sayang! 💙",
+            "Semangat ya apoteker pribadiku! 💊",
+            "Jangan lupa istirahat, love you bby! 🥰",
+            "Satu jurnal lagi, terus istirahat ya by! 🌸",
+            "Aku bangga sama kamu by! 💪",
+            "Laporan selesai, waktunya main PUBG sama pacar! 🎮",
+            "Jangan lupa minum air yang cukup ya cinta! 🚰",
+            "Goodjob sayang! 😍"
+        ];
+        document.getElementById('motivasi').textContent = motivasiList[Math.floor(Math.random() * motivasiList.length)];
+
+        // Preview gambar ikon kustom
+        const iconInput = document.getElementById('iconInput');
+        const customIcon = document.getElementById('customIcon');
+        const iconUploadText = document.getElementById('iconUploadText');
+
+        iconInput.addEventListener('change', () => {
+            const file = iconInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    customIcon.src = e.target.result;
+                    customIcon.classList.remove('hidden');
+                    iconUploadText.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                customIcon.classList.add('hidden');
+                iconUploadText.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
